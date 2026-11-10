@@ -1,13 +1,16 @@
 # 魔杖与红外配件固件
 
-本目录提供两块板的**应用镜像**。魔杖使用 ESP32-S3，红外配件使用 ESP32-C3 Super Mini；请按设备选择文件。
+本目录提供两块板的**应用镜像**。魔杖使用 ESP32-S3，红外配件使用 ESP32-C3 Super Mini；完整下载文件见 [v0.1.0 Release](https://github.com/WuYuStar/MugglesWand-IR/releases/tag/v0.1.0)。
 
 | 文件 | 用途 |
 | --- | --- |
 | `wand-esp32s3-app.bin` | 在魔杖网页「设备 → 系统升级」上传 |
 | `ir-esp32c3-app.bin` | 已按本项目分区表烧录的 C3 的应用更新 |
+| `wand-esp32s3-factory.bin` | 新魔杖的完整首次烧录镜像，Release 下载 |
+| `ir-esp32c3-factory.bin` | 新 C3 的完整首次烧录镜像，Release 下载 |
+| `MugglesWand-Trainer-1.1.0-Windows-x64.zip` | Windows 手势训练独立版，Release 下载 |
 
-新 C3 首次烧录还需要引导程序和分区表。请按 [C3 固件说明](../IRLearner-C3/README.md)使用 PlatformIO 完整烧录，不能只写入这里的应用镜像。源码分别位于 [魔杖固件仓库](https://github.com/WuYuStar/MugglesWand-IR-Firmware)和 [C3 固件目录](../IRLearner-C3/)；完整发布包见 [GitHub Releases](https://github.com/WuYuStar/MugglesWand-IR/releases/tag/v0.1.0)。
+首次烧录时，按芯片型号选择对应的 `factory.bin`，从 Flash 地址 `0x0` 写入。完整镜像会覆盖 NVS 设置区；已有设备日常更新请使用应用镜像。也可以按 [C3 固件说明](../IRLearner-C3/README.md)使用 PlatformIO 完整烧录。源码分别位于 [魔杖固件仓库](https://github.com/WuYuStar/MugglesWand-IR-Firmware)和 [C3 固件目录](../IRLearner-C3/)。
 
 ## 使用红外配件
 

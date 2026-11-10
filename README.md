@@ -4,7 +4,7 @@
 
 本仓库基于 [zoushui 的 Muggles' Wand](https://github.com/zou-shui/MugglesWand) 扩展，保留原项目的硬件、外壳和基础固件。本版本新增独立的手势训练流程、Home Assistant 配置，以及通过 ESP-NOW 连接的红外配件。
 
-[下载固件](https://github.com/WuYuStar/MugglesWand-IR/releases/tag/v0.1.0) · [查看硬件资料](1.Hardware/) · [查看手势训练工具](3.Software/4.GestureTrainer/README.md)
+[下载固件与训练工具](https://github.com/WuYuStar/MugglesWand-IR/releases/tag/v0.1.0) · [查看硬件资料](1.Hardware/) · [查看手势训练工具](3.Software/4.GestureTrainer/README.md)
 
 ![魔杖固件的发送指令、手势与灯效、设备信息、红外配件四个页面](5.Others/Images/魔杖固件四页总览.png)
 
