@@ -1,84 +1,69 @@
 # MugglesWand-IR
 
-### 挥一下魔杖，重放你学过的红外指令。
+一根能识别挥杖动作的魔杖，加上一块会学习遥控器信号的红外配件。先在网页里教它一个按键，再把这个信号交给手势：挥杖时，ESP32-C3 将学到的红外信号发出去。
 
-MugglesWand-IR 在 [zoushui 的 Muggles' Wand](https://github.com/zou-shui/MugglesWand) 上加入 ESP32-C3 红外配件。魔杖识别手势，C3 学习遥控器信号；两者通过 ESP-NOW 通信。常用的红外信号可以在魔杖网页里重放，也可以分配给手势。
+![魔杖与红外配件的系统示意](5.Others/Images/ir-system.svg)
 
-![Muggles' Wand 魔杖实拍](5.Others/Images/实拍图.jpeg)
+**魔杖负责识别与交互，红外配件负责收发。** 两块设备通过 ESP-NOW 通信，日常操作集中在魔杖自带的网页里。这个版本基于 [zoushui 的 Muggles' Wand](https://github.com/zou-shui/MugglesWand) 扩展；原项目的魔杖硬件、外壳和基础手势能力仍是整套体验的起点。
 
-> 魔杖外形、主板与原始手势项目来自 zoushui。本仓库保留原作者版权及 [MIT 许可](LICENSE)。红外配件是本版本新增的独立模块。
+## 从一个遥控按键开始
 
-## 一眼看懂
+1. 给魔杖与 ESP32-C3 红外配件供电。连接魔杖热点 `Muggles' Wand`，在浏览器打开 `http://192.168.4.1`。
+2. 在「配置 → 红外配件」连接 C3，点击「添加信号」，对准接收头短按遥控器。
+3. 学习成功后，信号会自动保存在 C3。先点「重放」确认受控设备有反应。
+4. 在「配置 → 手势与灯效」给一个手势选择这个信号。之后也能在「发送指令」里直接重放。
 
-| 魔杖 | 红外配件 | 网页控制台 |
-| --- | --- | --- |
-| ESP32-S3 + IMU 识别挥杖动作，提供照明、光绘与蓝牙遥控 | ESP32-C3 接收并保存红外信号，通过发射头重放 | 在同一个页面连接 C3、添加信号、手动重放并设置手势 |
+![当前固件的红外配件设置页面](5.Others/Images/红外配件界面预览.png)
 
-**使用流程：** 连接配件 → 点击「添加信号」 → 对准接收头按一下遥控器 → 保存成功 → 点击重放，或把信号分配给一个手势。
+列表按需增长，只显示已学信号。可以改名、重新学习、重放或删除；C3 当前最多保存 **32 个**信号。魔杖记住已连接的 C3，信号存于 C3，断电后保留。
 
-![魔杖网页中的发送指令页面预览](5.Others/Images/魔杖控制界面预览.png)
+## 魔杖不止能发红外
 
-*当前固件的页面预览；截图中的设备状态由浏览器模拟，实际连接状态以你的魔杖页面为准。*
+原项目的 ESP32-S3 魔杖内置 IMU、灯带和蓝牙。这个版本在保留照明、空中光绘、隔空鼠标和音量控制的同时，把红外重放与 Home Assistant 场景放进同一套手势设置里。每个手势可分别选择功能和灯光效果。
 
-## 红外学习与重放
+![当前固件的发送指令页面](5.Others/Images/魔杖控制界面预览.png)
 
-在魔杖网页打开「配置 → 红外配件」，搜索并连接 C3。魔杖会记住这块配件。点「添加信号」后，C3 等待遥控器输入；学习成功便自动保存，列表只显示已学信号。可以为信号改名、重新学习、重放或删除。
+*这两张页面截图由当前固件页面生成，连接状态与信号名称使用模拟数据。页面样式和操作来自本仓库代码；实机连接结果以设备显示为准。*
 
-![红外配件设置页面预览](5.Others/Images/红外配件界面预览.png)
+想让魔杖识别自己的挥法，可以使用项目中的 [手势训练工具](3.Software/4.GestureTrainer/README.md) 采集动作、训练模型，再导入魔杖。红外配件、Home Assistant 和自定义手势各有独立配置入口。
 
-*设置页面预览；截图中的连接地址和信号来自浏览器模拟。*
+## 设备与接线
 
-在「发送指令 → 红外配件」中可以直接选信号重放。在「配置 → 手势与灯效」中，可以把已学信号分配给魔杖手势。C3 当前最多保存 **32 个信号**；达到容量后删除旧信号即可继续添加。信号存于 C3，断电后保留。
-
-## 除红外之外
-
-- **照明与光绘：** 灯带提供照明和空中光绘，底部按键可返回手势识别。
-- **蓝牙遥控：** 魔杖可进入隔空鼠标和音量控制模式。
-- **Home Assistant：** 可单独配置并让手势触发场景。
-- **自定义手势：** [训练工具](3.Software/4.GestureTrainer/README.md)支持采集动作、训练模型并导入魔杖。
-
-![原项目的手势示意图](5.Others/Images/手势图解.png)
-
-*图中展示原项目的内置手势；每个手势实际执行的功能以你保存的配置为准。*
-
-## 开始使用
-
-1. 给魔杖和 C3 红外配件供电。手机或电脑连接魔杖热点 `Muggles' Wand`，密码 `12345678`，打开 `http://192.168.4.1`。
-2. 进入「配置 → 红外配件」，连接检测到的 C3。两块设备使用 ESP-NOW 信道 1；如果 Home Assistant 所用 Wi-Fi 在其他信道，页面会提示冲突。
-3. 点击「添加信号」，在 60 秒内对准接收头短按遥控器。学习成功后，信号会出现在列表中。
-4. 在「发送指令」中重放测试。确认受控设备响应后，再到「手势与灯效」中绑定。
-
-### C3 接线
-
-| 红外配件引脚 | ESP32-C3 Super Mini |
+| 部分 | 本版本中的作用 |
 | --- | --- |
-| 接收模块 OUT | GPIO7 |
-| 发射模块 IN | GPIO20 |
-| 两个模块 GND | 与 C3 共地 |
-| 发射模块 VCC | 模块额定的 5V 电源 |
+| ESP32-S3 魔杖 | 识别手势、显示网页、通过 ESP-NOW 控制红外配件 |
+| ESP32-C3 Super Mini | 接收、保存并重放红外信号 |
+| 红外接收模块 | `OUT → C3 GPIO7` |
+| 红外发射模块 | `IN → C3 GPIO20`；VCC 使用模块额定的 5V，GND 与 C3 共地 |
 
-C3 的 GPIO 为 3.3V 电平。接收模块若由 5V 供电，接入 GPIO7 前须确认 OUT 电平安全；发射模块 IN 须支持 3.3V 控制。3W 发射头需由合适的 5V 电源供电，不能由 GPIO 直接供电。完整接线与固件说明见 [C3 开发文档](2.Firmware/IRLearner-C3/README.md)。
+C3 的 GPIO 为 3.3V 电平。接收模块使用 5V 供电时，接入 GPIO7 前应确认 OUT 的电压安全；发射模块 IN 也应支持 3.3V 控制。3W 发射模块需要合适的 5V 供电。接线和调试细节见 [红外配件固件文档](2.Firmware/IRLearner-C3/README.md)。
 
-## 下载与开发
+两块设备使用 ESP-NOW 信道 1。魔杖若同时接入 Home Assistant 所在的 Wi-Fi，而该网络不在信道 1，网页会提示信道冲突。
 
-| 内容 | 位置 |
+## 下载与项目结构
+
+[下载 v0.1.0 固件](https://github.com/WuYuStar/MugglesWand-IR/releases/tag/v0.1.0) · [查看固件使用说明](2.Firmware/release-ir-espnow/README.md)
+
+| 目录 | 内容 |
 | --- | --- |
-| 魔杖和 C3 应用固件 | [固件交付目录](2.Firmware/release-ir-espnow/) |
-| 魔杖 ESP32-S3 源码 | [固件源码子仓库](https://github.com/WuYuStar/MugglesWand-IR-Firmware) |
-| ESP32-C3 红外固件源码 | [IRLearner-C3](2.Firmware/IRLearner-C3/) |
-| 手势训练工具 | [GestureTrainer](3.Software/4.GestureTrainer/) |
-| 原版硬件与外壳资料 | [硬件目录](1.Hardware/) · [外壳目录](4.Model/) |
+| [`2.Firmware/MugglesWand-src`](https://github.com/WuYuStar/MugglesWand-IR-Firmware) | 魔杖固件源码，作为 Git 子模块维护 |
+| [`2.Firmware/IRLearner-C3`](2.Firmware/IRLearner-C3/) | C3 红外配件固件与分区表 |
+| [`2.Firmware/release-ir-espnow`](2.Firmware/release-ir-espnow/) | 魔杖与 C3 的应用固件 |
+| [`3.Software/4.GestureTrainer`](3.Software/4.GestureTrainer/) | 手势采集、训练与模型导入工具 |
+| [`1.Hardware`](1.Hardware/) · [`4.Model`](4.Model/) | 原项目的硬件与外壳资料 |
 
 ```bash
 git clone --recurse-submodules https://github.com/WuYuStar/MugglesWand-IR.git
 ```
 
-固件采用 PlatformIO 构建。魔杖已提供的升级页可以上传匹配的 ESP32-S3 应用固件；新 C3 首次烧录需要同时写入引导程序和分区表，不能只写应用镜像。更多说明见[固件交付文档](2.Firmware/release-ir-espnow/README.md)。
+魔杖可在现有升级页上传匹配的 ESP32-S3 应用固件。新 C3 首次烧录需要引导程序和分区表，请使用 C3 的 PlatformIO 工程完整上传。
 
-## 当前验证范围
+## 验证与适用范围
 
-两份固件已在 WSL 编译；魔杖页面的浏览器交互检查覆盖连接、学习、重放、手势配置及添加第 10 个信号。两块设备已完成固件写入校验，魔杖能正常启动。两块设备同时通电时的 ESP-NOW 连接、真实挥杖触发和不同遥控设备的兼容性仍需逐项实测。普通红外接收头无法测量原遥控器载波，因此空调长帧、长按重复和滚动码设备不保证重放成功。
+魔杖与 C3 固件已在 WSL 编译，两个设备均完成写入校验，魔杖正常启动。网页交互检查覆盖连接、学习、命名、重放、删除、手势分配与添加第 10 个信号。两块设备同时通电时的 ESP-NOW 连接、真实挥杖触发，以及不同遥控设备的兼容性，仍需实机逐项验证。
 
-## 致谢与许可
+红外接收头无法测出原遥控器的载波频率，重放默认使用 38 kHz。空调长帧、长按重复与滚动码设备不保证可用；最终以受控设备的实际响应为准。
 
-原项目由 [zoushui](https://github.com/zou-shui/MugglesWand) 开源。魔杖的硬件设计、外形、基础固件和原始手势资料均来自原项目；原版演示视频可在 [Bilibili](https://www.bilibili.com/video/BV14XaJ6nEzr/) 观看。原作者的 MIT 许可与版权声明见 [LICENSE](LICENSE) 和 [固件许可](2.Firmware/MugglesWand-src/LICENSE)。
+## 来源与许可
+
+魔杖硬件、外壳、原始固件与基础手势项目来自 [zoushui / MugglesWand](https://github.com/zou-shui/MugglesWand)。本仓库保留原作者的 [MIT 许可](LICENSE) 和 [固件许可](2.Firmware/MugglesWand-src/LICENSE)。本页的系统示意图按当前红外扩展结构绘制；页面截图来自本仓库的固件界面。

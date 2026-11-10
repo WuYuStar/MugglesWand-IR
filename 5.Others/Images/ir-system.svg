@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 480" role="img" aria-labelledby="title desc">
+<title id="title">MugglesWand-IR 系统示意</title>
+<desc id="desc">挥杖动作由 ESP32-S3 魔杖识别，通过 ESP-NOW 连接 ESP32-C3 红外配件，再重放学到的信号。</desc>
+<defs>
+  <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#101b2d"/><stop offset="1" stop-color="#243650"/></linearGradient>
+  <linearGradient id="wood" x2="0" y2="1"><stop stop-color="#c49362"/><stop offset=".5" stop-color="#875534"/><stop offset="1" stop-color="#5e382a"/></linearGradient>
+  <filter id="shadow" x="-20%" y="-40%" width="150%" height="190%"><feGaussianBlur stdDeviation="13"/></filter>
+</defs>
+<rect width="1200" height="480" rx="28" fill="url(#bg)"/>
+<circle cx="1060" cy="-10" r="280" fill="#cf9b52" opacity=".04"/>
+<circle cx="200" cy="490" r="310" fill="#81a7c2" opacity=".045"/>
+<text x="76" y="86" fill="#f7f2e7" font-family="Arial,sans-serif" font-size="38" font-weight="700">MugglesWand-IR</text>
+<text x="78" y="122" fill="#b9c5ce" font-family="Arial,sans-serif" font-size="17">Gesture-controlled infrared accessory</text>
+<g transform="translate(92 278) rotate(-20)">
+ <path d="M0 0 C 30 -24, 74 -30, 122 -17 L 155 -10 C 218 -10, 340 -4, 465 -2 L 532 0 L 465 4 C 339 5, 216 10, 155 10 L 122 17 C 71 30, 27 25, 0 0Z" fill="#000" opacity=".35" filter="url(#shadow)" transform="translate(4 13)"/>
+ <path d="M0 0 C 30 -24, 74 -30, 122 -17 L 155 -10 C 218 -10, 340 -4, 465 -2 L 532 0 L 465 4 C 339 5, 216 10, 155 10 L 122 17 C 71 30, 27 25, 0 0Z" fill="url(#wood)" stroke="#ddb58a" stroke-width="2"/>
+ <path d="M22 -11 C 40 2, 40 3, 22 12 M78 -18 C 92 -4, 92 4, 78 18 M129 -16 C 137 -8, 137 8, 129 16" fill="none" stroke="#e2ad78" stroke-width="3" opacity=".65"/>
+ <circle cx="530" cy="0" r="7" fill="#f6d38b"/>
+</g>
+<text x="99" y="403" fill="#e5eaf0" font-family="Arial,sans-serif" font-size="20" font-weight="600">ESP32-S3 魔杖</text>
+<text x="99" y="431" fill="#acbac8" font-family="Arial,sans-serif" font-size="16">识别手势 · 灯光 · 蓝牙</text>
+<g fill="none" stroke="#e9be75" stroke-width="3" stroke-linecap="round" opacity=".85">
+ <path d="M677 246 q32 -35 63 0"/><path d="M663 230 q47 -54 94 0"/><path d="M648 212 q62 -73 124 0"/>
+</g>
+<text x="658" y="284" fill="#f0c47b" font-family="Arial,sans-serif" font-size="16">ESP-NOW</text>
+<g transform="translate(837 155)">
+ <rect x="0" y="0" width="276" height="205" rx="20" fill="#dce5df" opacity=".07" stroke="#8caea8" stroke-width="2"/>
+ <rect x="23" y="34" width="134" height="101" rx="12" fill="#285d57" stroke="#79a99c" stroke-width="3"/>
+ <rect x="42" y="53" width="64" height="40" rx="5" fill="#17252c"/><rect x="112" y="48" width="31" height="59" rx="4" fill="#d0c8b3"/>
+ <circle cx="48" cy="117" r="4" fill="#e7be73"/><circle cx="70" cy="117" r="4" fill="#e7be73"/><circle cx="92" cy="117" r="4" fill="#e7be73"/>
+ <path d="M158 83 h41" stroke="#e9c175" stroke-width="4"/>
+ <rect x="197" y="62" width="40" height="42" rx="5" fill="#393a3b" stroke="#e0c387" stroke-width="2"/>
+ <path d="M247 68 q22 15 0 30 M254 54 q35 30 0 59" stroke="#f1c477" stroke-width="3" fill="none"/>
+ <text x="24" y="171" fill="#e5eaf0" font-family="Arial,sans-serif" font-size="19" font-weight="600">ESP32-C3 红外配件</text>
+</g>
+<text x="864" y="404" fill="#acbac8" font-family="Arial,sans-serif" font-size="16">学习 · 保存 · 重放</text>
+</svg>
