@@ -1,0 +1,2 @@
+# Native window dependencies; training requirements remain in ../requirements.txt.
+pywebview==6.2.1

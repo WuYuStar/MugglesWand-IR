@@ -1,0 +1,6 @@
+
+# Local build and review outputs
+.pio/
+__pycache__/
+*.pyc
+.taste-skill/
