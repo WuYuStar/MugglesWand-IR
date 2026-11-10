@@ -75,8 +75,4 @@ git clone --recurse-submodules https://github.com/WuYuStar/MugglesWand-IR.git
 
 魔杖和 C3 的源码使用 PlatformIO 构建。魔杖可通过网页升级匹配的应用固件；新 C3 首次烧录时必须同时写入引导程序和分区表，详见各固件目录说明。
 
-## 当前验证情况
-
-两份固件已完成编译与写入校验，魔杖能正常启动。网页交互检查覆盖手势设置及红外连接、学习、重放和信号列表。两块板同时通电时的 ESP-NOW 通信、真实挥杖触发和不同遥控设备的兼容性仍需实测。
-
 原项目作者为 [zoushui](https://github.com/zou-shui/MugglesWand)；原作者版权和 MIT 许可保留在 [LICENSE](LICENSE) 与 [固件许可](2.Firmware/MugglesWand-src/LICENSE)。
