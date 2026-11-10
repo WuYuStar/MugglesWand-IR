@@ -10,16 +10,20 @@
 - 3W 发射模块需要足够的 5V 电源，不能由 GPIO 或 3.3V 引脚供电。测试只发短帧。
 - 当前 ESP-NOW 重放采用已经验证的高电平有效驱动。外部驱动应有合适的默认关闭电阻；更换发射模块时，应先确认触发极性，避免持续点亮。
 
-## WSL 构建
+## 构建与烧录
+
+在 WSL 中安装 Python 和 PlatformIO，进入本目录后运行：
 
 ```sh
-/home/codex/.venvs/ir-firmware/bin/pio run -d /home/codex/project/muggleswand/2.Firmware/IRLearner-C3
+python3 -m venv /home/codex/.venvs/ir-firmware
+/home/codex/.venvs/ir-firmware/bin/python -m pip install platformio pyserial
+/home/codex/.venvs/ir-firmware/bin/pio run
 ```
 
-USB 必须先共享并接入 WSL，出现 `/dev/ttyACM0` 等串口后再烧录。烧录会覆盖该板现有应用，应先用 esptool 读取整片 Flash 备份。
+USB 设备需先接入 WSL，出现 `/dev/ttyACM0` 等串口后再烧录。烧录会覆盖该板现有应用。
 
 ```sh
-/home/codex/.venvs/ir-firmware/bin/pio run -d /home/codex/project/muggleswand/2.Firmware/IRLearner-C3 -t upload --upload-port /dev/ttyACM0
+/home/codex/.venvs/ir-firmware/bin/pio run -t upload --upload-port /dev/ttyACM0
 ```
 
 ## 串口命令
@@ -27,7 +31,7 @@ USB 必须先共享并接入 WSL，出现 `/dev/ttyACM0` 等串口后再烧录�
 每条命令以换行结束。控制脚本自动选择唯一的 Espressif USB 串口，也支持 `--port /dev/ttyACM0`。
 
 ```sh
-/home/codex/.venvs/ir-firmware/bin/python /home/codex/project/muggleswand/2.Firmware/IRLearner-C3/tools/console.py --command status
+/home/codex/.venvs/ir-firmware/bin/python tools/console.py --command status
 ```
 
 | 命令 | 行为 |

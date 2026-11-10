@@ -1,50 +1,19 @@
-# train.py 简介
+# 旧版 TensorFlow 手势训练脚本
 
-`train.py` 用于训练手势识别模型，主要特点：
+`train.py` 读取同目录下的数字标签 CSV，训练 1D-CNN 并导出全整数 INT8 模型 `gesture_model.tflite`。这个脚本用于**需要自行修改和重编译固件**的旧流程。新固件的独立模型上传使用 `.wandmodel`，请优先用[魔杖手势训练](../4.GestureTrainer/README.md)。
 
-- **自动识别数据集**：自动读取同目录下所有 `N.csv` 文件（`N` 为从 0 开始连续的整数），文件名即手势类别编号，支持自定义任意数量的手势类别。
-- **数据格式**：每行一个样本，格式为 `label, x0, y0, x1, y1, …, x99, y99`，即 100 个时刻的 2 轴数据；脚本会校验行内标签与文件名一致，不符则终止。
-- **网络结构**：轻量 1D-CNN（2 层卷积 + 批归一化 + 池化 + 全连接），配合 EarlyStopping 防止过拟合，PC 上即可快速训练。
-- **自动量化**：训练完成后自动转为 INT8 全整数量化模型 `gesture_model.tflite`，并在终端输出归一化参数 `mean` / `std`，供固件端推理使用。
+## 准备数据
 
-## 运行脚本
+在本目录放入 `0.csv`、`1.csv` 等文件，编号必须从 0 连续递增，不能混入其他 CSV。每行格式为 `label,x0,y0,...,x99,y99`，共 1 个标签和 200 个数值；行内标签要与文件名一致。可用[原始数据采集脚本](../1.OriginalData/DataCollector/README.md)制作数据。
 
-TensorFlow需要python3.9，需先安装该版本的Python。
+## 运行
 
-用python3.9创建虚拟环境：
+在 WSL 中进入本目录，创建虚拟环境并安装固定版本的依赖：
 
-```bash
-py -3.9 -m venv tf_env
+```sh
+python3 -m venv /home/codex/.venvs/wand-legacy-tf
+/home/codex/.venvs/wand-legacy-tf/bin/python -m pip install -r requirements.txt
+/home/codex/.venvs/wand-legacy-tf/bin/python train.py
 ```
 
-激活虚拟环境：
-
-```bash
-tf_env\Scripts\activate
-```
-
-安装依赖：
-
-```bash
-pip install -r requirements.txt
-```
-
-运行脚本（运行之前请先将训练数据放在train.py同级目录）：
-
-```bash
-python train.py
-```
-
-模型训练好后会输出归一化参数`mean`和`std`到终端、生成模型文件`gesture_model.tflite`到根目录。后者需要在git bash中使用以下命令将其转换为字节数组：
-
-```bash
-xxd -i gesture_model.tflite > gesture_model.h
-```
-
-之后即可替换原固件中的模型，需要替换的地方有：
-
-`src/Model/gesture_inference.cpp`中的**归一化参数**和**输出类别数量**
-
-`src/Model/gesture_model.h`整个文件替换为新的`gesture_model.h`
-
-
+脚本输出测试准确率、归一化参数 `mean` 和 `std`，并生成 `gesture_model.tflite`。旧固件集成时，还需把模型转成 C 数组，更新模型头文件、归一化参数和类别数，再编译固件。这些输出不能直接上传到新版魔杖的「模型更新」入口。

@@ -1,29 +1,12 @@
-# Software
+# 电脑端工具
 
-本目录存放在PC上运行的Python脚本和tf模型
+本目录包含手势训练、原始数据采集和空中光绘图案制作程序。**首次使用新模型，优先选择[魔杖手势训练](4.GestureTrainer/README.md)**：它把录制、检查、训练、测试和上传放在同一界面，不需要重新编译魔杖固件。
 
-## 1.OriginalData
+| 工具 | 适用场景 |
+| --- | --- |
+| [魔杖手势训练](4.GestureTrainer/README.md) | 日常录制手势、训练 INT8 模型并上传到魔杖 |
+| [原始数据采集](1.OriginalData/DataCollector/README.md) | 通过魔杖 TCP 数据流采集带数字标签的 CSV，供旧流程或研究使用 |
+| [TensorFlow 训练脚本](2.TensorFlow/README.md) | 使用数字标签 CSV 生成旧式 TFLite 模型，需自行修改固件 |
+| [POV 光绘工具](3.POVTool/README.md) | 把图片变成固件可用的灯带图案代码 |
 
-内有DataCollector脚本源码以及打包好的可执行文件`DataCollector.exe`，后者可直接运行（无需Python环境）。
-
-另外附有固件中模型的原始数据（csv）。
-
-## 2.TensorFLow
-
-内有利用原始数据对模型进行训练的程序`train.py`。需要自行配置python环境后运行。详细步骤请参阅内部的`README.md`。
-
-## 3.POVTool
-
-该工具是一个带有UI的可视化上位机，用于将任意图片转换成数组，供光绘模块使用。需要自行配置python环境后运行，详细步骤请参阅内部的`README.md`。
-
-
-
-
-
-
-
-
-
-## 4.GestureTrainer
-
-面向新手的电脑端手势训练工具：支持8～16个手势，每类至少120条，集成采集、检查数据、训练、独立测试与模型上传。电脑只管理手势与模型；功能、灯效和对应配置由魔杖固件独立负责。日常训练无需编译或升级整个固件。启动方式见 [工具说明](./4.GestureTrainer/README.md)。
+这些工具运行在电脑上。魔杖的功能与灯效仍在魔杖网页「配置 → 手势与灯效」中设置。

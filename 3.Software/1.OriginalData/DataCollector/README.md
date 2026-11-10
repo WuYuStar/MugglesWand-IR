@@ -1,33 +1,14 @@
-# DataCollector.py 脚本
+# 原始手势数据采集
 
-用于采集魔杖输出的数据，为后续模型训练提供数据支持。
+`DataCollector.py` 从魔杖的 TCP 数据流读取 IMU 双轴数据。当状态机输出 `4` 且缓冲区已有 100 帧时，它把一条样本追加到 `<数字标签>.csv`。每行包含标签和 100 组双轴数值，可供[旧版 TensorFlow 训练脚本](../../2.TensorFlow/README.md)使用。
 
-采集前需要连接魔杖热点，脚本会访问8080端口的TCP/IP串口获取IMU输出的数据并缓存，只有在手势状态机输出4时保存最新的100帧数据到csv中。
+日常训练和模型上传建议使用[魔杖手势训练](../../4.GestureTrainer/README.md)，它提供数据检查和统一的上传流程。本脚本保留给需要原始 CSV 的用户。
 
-## 若需要打包成exe，执行以下操作：
+## 采集
 
-### 1.创建虚拟环境并启动（可选）
+1. 让电脑连接魔杖热点 `Muggles' Wand`，确认可以打开 `http://192.168.4.1`。
+2. 在 WSL 中进入本目录，运行 `python3 DataCollector.py`。脚本只使用 Python 标准库。
+3. 按提示输入端口，默认 `8080`；输入数字手势标签，默认 `0`。保持该标签对应同一种动作。
+4. 挥杖采集；按 `Ctrl+C` 结束。CSV 保存在运行命令时的当前目录，重启后会继续追加。
 
-创建：
-
-```bash
-python -m venv .venv
-```
-
-启动：
-
-```bash
-.venv\Scripts\activate
-```
-
-### 2.安装pyinstaller
-
-```bash
-pip install pyinstaller
-```
-
-### 3.打包DataCollector.py
-
-```bash
-pyinstaller -F --clean DataCollector.py
-```
+脚本默认连接 `192.168.4.1`。如需改变地址，修改 `DataCollector.py` 顶部的 `DEFAULT_IP`。每条样本须有完整的 100 帧；连接中断时重新运行脚本即可。

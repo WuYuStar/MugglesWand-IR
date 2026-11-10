@@ -1,29 +1,17 @@
-# Windows portable desktop build
+# 魔杖手势训练独立版
 
-The native launcher starts the bundled interpreter with no console window. `desktop.py` hosts the existing local HTTP application and a pywebview/Edge WebView2 window. Training, live prediction, and quality analysis remain isolated child processes using the same bundled interpreter. No installed Python or training venv is needed to run the product.
+这个目录保存 Windows 便携版的启动器和打包脚本。成品由 `魔杖手势训练.exe`、`app/` 和 `runtime/` 组成；用户无需安装 Python。启动器打开本地训练界面，训练、预测和数据检查使用随包附带的解释器运行。用户数据默认保存在 `%LOCALAPPDATA%/MugglesWandTrainer`，与程序目录分开。
 
-Build on Windows with verified Python 3.13 x64 training dependencies (`../requirements.txt`) and a separate Python 3.13 x64 GUI environment (`requirements.txt`). Microsoft's .NET Framework C# compiler builds the small launcher. The builder copies the complete numerical libraries, their license files, the Python runtime, UI; no firmware template or compiler is included. Do not exclude package directories named `test`: TensorFlow imports APIs with that name.
+## 目录中的文件
 
-```text
-python build_windows.py --training-python <training-venv>/Scripts/python.exe --window-python <GUI-venv>/Scripts/python.exe --output <new-product-folder> --seed <official-example-data> --license <project-LICENSE> --zip
-```
+| 文件 | 用途 |
+| --- | --- |
+| `Launcher.cs` | 无控制台窗口的原生启动器 |
+| `build_windows.py` | 收集应用、Python 运行时和依赖 |
+| `slim_windows.py` | 按明确规则移除开发文件，保留运行所需组件和许可元数据 |
+| `requirements.txt` | 桌面窗口依赖 |
+| `sitecustomize.py` | 保持子进程 JSON 输出为 UTF-8 |
 
-Use a fresh output folder. User data, trained models, device backups and build caches must never be inputs to the distribution. Official example data supports the legacy example import only; the gesture workflow starts empty on a new computer.
+构建脚本需要 Windows、64 位 Python 3.13，以及分别安装训练依赖和窗口依赖的两个环境；它不能在 WSL 中运行。本项目的日常源码开发、测试和固件构建均在 WSL 中完成。完整打包时须使用新的输出目录，不能把用户数据、模型、设备备份或构建缓存放入分发包。`test` 命名的 TensorFlow 包目录是运行依赖，不能按名称删除。
 
-The portable `_pth` file isolates imports from installed Python and includes the application directory for worker imports. Its `sitecustomize.py` keeps JSON worker streams in UTF-8. The native launcher also clears installed-Python environment overrides. WebView2 uses a per-user cache; the supplied Microsoft bootstrapper can install the display component if it is absent.
-
-Validate the native window with `魔杖手势训练.exe --workspace <isolated-folder> --smoke-output <result.json>`. This opens the real Windows window, waits for the four-stage application to initialize, records its state and closes. Separately run actual training/export/prediction using the bundled `runtime/python.exe` with installed Python excluded from PATH. System firmware is maintained separately on the wand. Never flash test artifacts.
-
-Source tests: `python -m unittest discover -s tests -p test_*.py`.
-
-The builder applies the explicit policy in `slim_windows.py`: omit C++ headers,
-native import/debug libraries, cached bytecode, libclang development tooling and
-the legacy PlatformIO module. Keep runtime DLLs, TensorFlow public Python APIs
-(including names containing `test`), training/export/prediction dependencies and
-third-party license metadata. This runtime supports this application, rather than
-general Python extension development. Validate actual training, INT8 export and
-prediction, data review and the native WebView2 window for each build.
-
-Windows NTFS compression may additionally reduce allocated disk space without
-changing file contents. It is a local deployment option, not part of the ZIP
-format; measure logical and allocated sizes separately and verify after applying.
+独立版使用隔离的 Python 路径，并调用 Edge WebView2 显示本地界面。打包后应在目标设备上核对窗口启动、录制数据检查、实际训练、INT8 导出、预测和模型上传。打包脚本与固件开发分开；桌面版不包含固件编译工具。
