@@ -1,6 +1,6 @@
 # 魔杖与红外配件固件
 
-本目录提供两块板的**应用镜像**。魔杖使用 ESP32-S3，红外配件使用 ESP32-C3 Super Mini；完整下载文件见 [v0.1.0 Release](https://github.com/WuYuStar/MugglesWand-IR/releases/tag/v0.1.0)。
+本目录提供两块板的**应用镜像**。魔杖使用 ESP32-S3，红外配件使用 ESP32-C3 Super Mini；完整下载文件见 [v0.2.0-rc1 Release](https://github.com/WuYuStar/MugglesWand-IR/releases/tag/v0.2.0-rc1)。
 
 | 文件 | 用途 |
 | --- | --- |

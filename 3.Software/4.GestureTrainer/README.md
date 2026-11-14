@@ -2,7 +2,7 @@
 
 在电脑上录制自己的挥杖动作，检查样本、训练模型、测试识别，再把模型上传到魔杖。整个过程集中在一个界面；手势对应的功能和灯效在魔杖网页中设置。
 
-[下载 Windows 独立版](https://github.com/WuYuStar/MugglesWand-IR/releases/tag/v0.1.0) · [查看魔杖项目](../../README.md)
+[下载 Windows 独立版](https://github.com/WuYuStar/MugglesWand-IR/releases/tag/v0.2.0-rc1) · [查看魔杖项目](../../README.md)
 
 ![魔杖手势训练的录制页面](docs/手势训练界面预览.png)
 
@@ -26,7 +26,7 @@
 
 上传后打开魔杖网页 `http://192.168.4.1`，在「配置 → 手势与灯效」给每个手势选择功能和灯效并保存。新增手势也要在这里分配功能。电脑工具只处理动作与模型。
 
-若魔杖仍运行不支持独立模型更新的旧固件，先在魔杖网页「设备 → 系统升级」安装[本项目基础固件](https://github.com/WuYuStar/MugglesWand-IR/releases/tag/v0.1.0)。此后更新手势模型无需重新刷整套固件。
+若魔杖仍运行不支持独立模型更新的旧固件，先在魔杖网页「设备 → 系统升级」安装[本项目基础固件](https://github.com/WuYuStar/MugglesWand-IR/releases/tag/v0.2.0-rc1)。此后更新手势模型无需重新刷整套固件。
 
 ## 从源码运行
 
