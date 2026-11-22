@@ -21,6 +21,8 @@ class EffectDispatchTests(unittest.TestCase):
             (root/'Arduino.h').write_text('''#pragma once
 #include <stdint.h>
 #include <stddef.h>
+#include <string>
+using String=std::string;
 using QueueHandle_t=void*;
 #define portMAX_DELAY 0xffffffff
 inline uint32_t millis(){return 0;}
@@ -41,7 +43,7 @@ struct EventBus{static bool publish(EventID,EventParam=0,EventParam=0){return tr
 #include "APP/APP.cpp"
 #include <cassert>
 struct Done{};
-bool currentGeneration=true;SystemEvent pending;bool consumed=false;int external=0,lumos=0,defaultFx=0,customFx=-99,exits=0,haAction=-1;bool mouse=false;
+bool currentGeneration=true;SystemEvent pending;bool consumed=false;int external=0,externalSlot=0,lumos=0,defaultFx=0,customFx=-99,exits=0,haAction=-1;bool mouse=false;
 int xQueueReceive(QueueHandle_t,void*p,uint32_t){if(consumed)throw Done{};consumed=true;*static_cast<SystemEvent*>(p)=pending;return 1;}
 namespace HAL{void ws2812_start_fx(AnimationBase*a){++defaultFx;delete a;}}
 void gesture_effect_play(int id){customFx=id;}
@@ -50,20 +52,23 @@ bool APP_ble_mouse_in_mode(){return mouse;}bool APP_ble_volume_in_mode(){return 
 void APP_ble_mouse_mode_exit(){mouse=false;++exits;}void APP_ble_volume_mode_exit(){}void APP_POV_mode_exit(){}
 void APP_ble_mouse_mode_enter(){mouse=true;}void APP_ble_volume_mode_enter(){}void APP_POV_mode_enter(){}
 void APP_Lumos_trigger(uint32_t){++lumos;}void APP_Lumos_on(uint32_t){}void APP_Lumos_off(){}
-void APP_espnow_tx_signal(uint8_t){++external;}void APP_espnow_init(){}
+bool ir_link_command(uint8_t type,uint8_t slot,const char*){assert(type==0x42&&slot==externalSlot);++external;return true;}
+void APP_espnow_init(){}
 void APP_ble_mouse_move(float,float){}void APP_ble_volume_knob(float){}void APP_POV_on_imu_data(float,float){}void APP_POV_set_params(uint8_t,bool){}
 void run(EventID id,int action,int effect){pending={id,action,effect};consumed=false;external=lumos=defaultFx=exits=0;customFx=-99;try{app_task(nullptr);}catch(Done&){} }
 int main(){
  currentGeneration=false;run(EVENT_GESTURE_TRIGGER,4,5);assert(!exits&&customFx==-99);currentGeneration=true;
  mouse=true;run(EVENT_GESTURE_TRIGGER,-1,5);assert(customFx==5&&!external&&!lumos&&!defaultFx&&!exits&&mouse);
  run(EVENT_GESTURE_FX_PREVIEW,5,0);assert(customFx==5&&!external&&!lumos&&!defaultFx&&!exits&&mouse);
- run(EVENT_GESTURE_TRIGGER,0,5);assert(external==1&&customFx==5&&!defaultFx&&exits==1&&!mouse);
+ run(EVENT_GESTURE_TRIGGER,12,5);assert(external==1&&customFx==5&&!defaultFx&&exits==1&&!mouse);
  mouse=true;run(EVENT_GESTURE_DETECTED,2,0);assert(mouse&&!exits&&!defaultFx&&customFx==-99);
  run(EVENT_GESTURE_DETECTED,3,0);assert(mouse&&!exits&&!defaultFx&&customFx==-99);
+ run(EVENT_GESTURE_TRIGGER,0,5);assert(mouse&&!exits&&!external&&customFx==-99);
  run(EVENT_GESTURE_TRIGGER,5,21);assert(lumos==1&&customFx==21);
  run(EVENT_GESTURE_TRIGGER,8,21);assert(haAction==8&&customFx==21&&!lumos&&!external);
- run(EVENT_GESTURE_DETECTED,0,0);assert(external==1&&defaultFx==1&&customFx==-99);
- run(EVENT_GESTURE_TRIGGER,0,-1);assert(external==1&&defaultFx==1&&customFx==-99);
+ externalSlot=31;
+ run(EVENT_GESTURE_DETECTED,43,0);assert(external==1&&!defaultFx&&customFx==-99);
+ run(EVENT_GESTURE_TRIGGER,43,-1);assert(external==1&&!defaultFx&&customFx==-99);
 }
 ''')
             exe=root/('dispatch.exe' if os.name=='nt' else 'dispatch')

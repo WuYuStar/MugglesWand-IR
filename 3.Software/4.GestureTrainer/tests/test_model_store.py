@@ -86,8 +86,8 @@ int main(int argc,char**argv){
  uint32_t ticket;assert(ModelStore::reserve(reinterpret_cast<void*>(1),ticket));assert(!ModelStore::reserve(reinterpret_cast<void*>(2),ticket));ModelStore::cancel(reinterpret_cast<void*>(2));assert(ModelStore::busy());ModelStore::cancel(reinterpret_cast<void*>(1));assert(!ModelStore::busy());
  upload(b,true);ModelStore::init();gesture_bindings_init();assert(gesture_model_count()==9);assert(!strcmp(gesture_model_key(),argv[5]));
  auto state=gesture_bindings_state();assert(state.actions[0]==5&&state.effects[0]==21&&state.actions[8]==-1&&state.effects[8]==-1);
- state.actions[8]=1;state.effects[8]=25;assert(gesture_bindings_save(state.actions,state.effects,state.revision)==BindingSave::Saved);
- upload(c,true);ModelStore::init();gesture_bindings_init();state=gesture_bindings_state();assert(gesture_model_count()==9&&state.actions[8]==1&&state.effects[8]==25);
+ state.actions[8]=43;state.effects[8]=25;assert(gesture_bindings_save(state.actions,state.effects,state.revision)==BindingSave::Saved);
+ upload(c,true);ModelStore::init();gesture_bindings_init();state=gesture_bindings_state();assert(gesture_model_count()==9&&state.actions[8]==43&&state.effects[8]==25);
  // Corrupt the latest bank payload. Boot must recover the previous valid bank.
  flash[64+1088+10]^=128;ModelStore::init();assert(gesture_model_count()==9);gesture_bindings_init();assert(gesture_bindings_state().effects[8]==25);
  char error[180];auto invalid=b;invalid[0]^=1;assert(!ModelStore::validate(invalid.data(),invalid.size(),error,sizeof(error)));

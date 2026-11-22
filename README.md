@@ -4,13 +4,14 @@
 
 本仓库基于 [zoushui 的 Muggles' Wand](https://github.com/zou-shui/MugglesWand) 扩展，保留原项目的硬件、外壳和基础固件。本版本新增独立的手势训练流程、Home Assistant 配置，以及通过 ESP-NOW 连接的红外配件。
 
-[下载固件与训练工具](https://github.com/WuYuStar/MugglesWand-IR/releases/tag/v0.2.0-rc1) · [查看硬件资料](1.Hardware/) · [查看手势训练工具](3.Software/4.GestureTrainer/README.md)
+[魔杖固件 6.4 稳定版](2.Firmware/releases/6.4/) · [查看硬件资料](1.Hardware/) · [下载手势训练工具](3.Software/4.GestureTrainer/README.md)
 
 ![魔杖固件的发送指令、手势与灯效、设备信息、红外配件四个页面](5.Others/Images/魔杖固件四页总览.png)
 
 ## 功能
 
 - **手势识别与映射：** 用魔杖内置 IMU 识别挥杖动作。在「配置 → 手势与灯效」中，为每类手势分别选择功能和灯光效果，保存后由魔杖执行。
+- **动作传感器与休眠：** 6.4 稳定版启动时自动识别 ICM-42670-P 或 ICM-42607-P，支持静置休眠和动作唤醒。在「设备信息」查看识别到的型号，在「采集与诊断」查看实时动作曲线。
 - **照明与光绘：** 切换魔杖灯光，或在空中挥动魔杖显示所选图案。可在「配置」中把灯珠数量设为 35～45 颗，默认 39 颗。
 - **蓝牙遥控：** 与电脑或手机配对后使用隔空鼠标、音量控制。
 - **手势训练：** 在电脑上录制、检查和训练自己的手势，上传模型后再在魔杖网页中分配功能。训练模型不需要重新编译基础固件。
@@ -63,7 +64,7 @@ ESP32-C3 Super Mini 连接红外接收和发射模块，与魔杖通过 ESP-NOW 
 | --- | --- |
 | [魔杖固件源码](https://github.com/WuYuStar/MugglesWand-IR-Firmware) | ESP32-S3 固件，通过 Git 子模块引用 |
 | [红外配件固件](2.Firmware/IRLearner-C3/) | ESP32-C3 固件、分区表与调试说明 |
-| [固件下载说明](2.Firmware/release-ir-espnow/README.md) | 魔杖与 C3 应用镜像的用途 |
+| [6.4 魔杖固件稳定版](2.Firmware/releases/6.4/) · [C3 镜像及 6.3-rc1 基线](2.Firmware/release-ir-espnow/README.md) | 应用镜像、首次烧录与实物验收说明 |
 | [手势训练工具](3.Software/4.GestureTrainer/) | 动作采集、模型训练、测试与上传 |
 | [硬件资料](1.Hardware/) · [外壳模型](4.Model/) | 主板与外壳文件 |
 

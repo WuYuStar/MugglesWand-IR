@@ -1,10 +1,10 @@
-"""Real train -> INT8 live test -> mapped firmware builds, with isolated fixtures.
+"""Train an INT8 model, test it on a loopback sample stream, and upload it.
 The seed dataset is relabelled ONLY for this pipeline test, not for user training.
 No serial flashing or OTA to a physical device occurs.
 """
 import argparse
 import csv
-import hashlib
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 from pathlib import Path
 import shutil
@@ -14,6 +14,8 @@ import threading
 import time
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from app import Trainer,find_seed
+from model_package import decode
+from model_transfer import upload
 from workflow_core import PROFILE,GESTURES
 
 parser=argparse.ArgumentParser()
@@ -63,22 +65,41 @@ try:
     assert all((w.data/f'{i}.csv').read_bytes()==before[i] for i in range(8))
     assert validation['latest']['gesture'] in GESTURES
     print('PASS: actual latest-model inference, serial-fragmented TCP, replay exclusion, independent test records, restoration',flush=True)
-    w.build();wait(lambda:not app.job['running'])
-    assert app.job['phase']=='complete',list(app.logs)
-    original=w.firmware_path().read_bytes()
-    model_hash=w.result['report']['model_sha256']
-    header=(run/'firmware_project/src/Model/GestureProfile.h').read_text()
-    assert '"letters-v1"' in header and '{-1,-1,-1,-1,-1,-1,-1,-1}' in header
-    assert '#define WS2812_LED_COUNT 39' in (run/'firmware_project/src/Config.h').read_text()
-    print('PASS: real firmware compile, letter labels, runtime NVS mapping, 39 LEDs, verified manifest',flush=True)
-    config=run/'firmware_project/src/Config.h'
-    config.write_text(config.read_text().replace('WS2812_LED_COUNT 39','WS2812_LED_COUNT 58'))
-    w.build();wait(lambda:not app.job['running'])
-    assert app.job['phase']=='complete',list(app.logs)
-    assert 'WS2812_LED_COUNT 39' in config.read_text()
-    assert w.result['report']['model_sha256']==model_hash
-    assert w.firmware_path().exists()
-    print('PASS: cached project refreshed, unchanged model, no desktop function config required',flush=True)
+    data = w.model_path().read_bytes()
+    package = decode(data)
+    received = []
+    phases = []
+
+    class ModelEndpoint(BaseHTTPRequestHandler):
+        def log_message(self, *args):
+            pass
+
+        def reply(self, status, value):
+            self.send_response(status)
+            self.end_headers()
+            self.wfile.write(json.dumps(value).encode())
+
+        def do_GET(self):
+            assert self.path == '/api/model'
+            self.reply(200, dict(protocol=1, contract=1, storage_ready=True, updating=False,
+                                 max_classes=16, max_model_bytes=49152,
+                                 active_hash=received[-1]['sha256'] if received else 'builtin'))
+
+        def do_POST(self):
+            assert self.path == '/api/model' and self.headers['X-Wand-Model'] == '1'
+            received.append(decode(self.rfile.read(int(self.headers['Content-Length']))))
+            self.reply(202, dict(accepted=True, ticket=1))
+
+    with ThreadingHTTPServer(('127.0.0.1', 0), ModelEndpoint) as server:
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        try:
+            upload('127.0.0.1', data, lambda phase, *_: phases.append(phase),
+                   http_port=server.server_port, _allow_loopback=True)
+        finally:
+            server.shutdown()
+    assert received == [package] and phases[-1] == 'complete'
+    assert package['gestures'] == GESTURES
+    print('PASS: real .wandmodel package sent to simulated firmware and confirmed by hash', flush=True)
     (w.root/'TEST-FIXTURE-DO-NOT-INSTALL.txt').write_text('Relabelled official sample fixture for software verification only. Not the user gesture model. No hardware update performed.')
     print('FIXTURE_RUN',run,flush=True)
 finally:

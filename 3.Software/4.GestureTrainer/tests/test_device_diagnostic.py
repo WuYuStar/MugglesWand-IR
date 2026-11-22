@@ -46,7 +46,7 @@ class DiagnosticTests(unittest.TestCase):
                         if commands.count('back')==3:finished.set()
                     elif command=='web:status':
                         count+=100
-                        status=dict(type='status',version='6.1-rc1',mode=mode,imuReady=True,inferenceReady=True,sampleCount=count,bindings=[-1]*8,gestureEffects=[-1]*8,gestureLabels=list('aenops')+['8','∞'],password='PRIVATE')
+                        status=dict(type='status',version='6.4',mode=mode,imuReady=True,inferenceReady=True,sampleCount=count,bindings=[-1]*8,gestureEffects=[-1]*8,gestureLabels=list('aenops')+['8','∞'],password='PRIVATE')
                         data=json.dumps(status).encode();self.wfile.write(b'\x81\x7e'+struct.pack('!H',len(data))+data)
                     else:raise AssertionError(command)
         server=socketserver.ThreadingTCPServer(('127.0.0.1',0),Peer);threading.Thread(target=server.serve_forever,daemon=True).start()

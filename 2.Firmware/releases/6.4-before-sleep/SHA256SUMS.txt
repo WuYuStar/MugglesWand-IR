@@ -1,0 +1,2 @@
+a06ef5b059c9e4669a8c7de938300389699afa5498f62a044cfbfa4b9717d332  MugglesWand-6.4-app.bin
+c0bbf7a709deeeaadd19f8484f09ba73500d9b99ab6c45d29e392107f7d0f62b  MugglesWand-6.4-factory.bin

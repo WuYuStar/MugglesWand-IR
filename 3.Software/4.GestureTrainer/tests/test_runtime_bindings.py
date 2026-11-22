@@ -69,7 +69,7 @@ int main(int argc,char**argv){
  std::string mode=argv[1];
  if(mode=="defaults"){for(int i=0;i<8;++i)assert(s.actions[i]==kDefaultGestureActions[i]);}
  if(mode=="save"){
-  int8_t v[8]={-1,7,0,1,4,6,5,4};uint32_t r=s.revision;
+  int8_t v[8]={-1,7,12,43,4,6,5,4};uint32_t r=s.revision;
   assert(gesture_bindings_save(v,r)==BindingSave::Saved);
   assert(gesture_binding_action(6)==5&&gesture_binding_action(7)==4);
   assert(gesture_binding_action(-1)==-1&&gesture_binding_action(8)==-1);
@@ -77,7 +77,7 @@ int main(int argc,char**argv){
   auto current=gesture_bindings_state();assert(current.revision==r+1);
   assert(gesture_bindings_save(v,current.revision)==BindingSave::Saved);
   assert(gesture_bindings_state().revision==current.revision);
-  v[0]=12;assert(gesture_bindings_save(v,current.revision)==BindingSave::Invalid);
+  v[0]=0;assert(gesture_bindings_save(v,current.revision)==BindingSave::Invalid);
   assert(gesture_binding_action(0)==-1);
  }
  if(mode=="ha-save"){
@@ -96,8 +96,8 @@ int main(int argc,char**argv){
  }
  if(mode=="parse"){
   int8_t a[8];uint32_t r;
-  assert(gesture_bindings_parse("web:bindings 4294967295 -1,0,1,6,7,4,5,7",a,r)&&r==UINT32_MAX&&a[0]==-1);
-  for(const char*c:{"web:bindings 1 2,3,0,0,0,0,0,0","web:bindings 4294967296 0,0,0,0,0,0,0,0","web:bindings -1 0,0,0,0,0,0,0,0","web:bindings 1 0,0,0,0,0,0,0,12","web:bindings 1 0,0,0,0,0,0,0,-2","web:bindings 1 0,0,0,0,0,0,0","web:bindings 1 0,0,0,0,0,0,0,0,1","web:bindings 1 0,0,0,0,0,0,0,00","web:bindings 1 0,0,0,0,0,0,0,0 junk","web:bindings 1 ","web:bindings"})
+  assert(gesture_bindings_parse("web:bindings 4294967295 -1,12,43,6,7,4,5,7",a,r)&&r==UINT32_MAX&&a[0]==-1);
+  for(const char*c:{"web:bindings 1 0,4,4,4,4,4,4,4","web:bindings 1 1,4,4,4,4,4,4,4","web:bindings 1 2,4,4,4,4,4,4,4","web:bindings 1 3,4,4,4,4,4,4,4","web:bindings 4294967296 4,4,4,4,4,4,4,4","web:bindings -1 4,4,4,4,4,4,4,4","web:bindings 1 4,4,4,4,4,4,4,99","web:bindings 1 4,4,4,4,4,4,4,-2","web:bindings 1 4,4,4,4,4,4,4","web:bindings 1 4,4,4,4,4,4,4,4,1","web:bindings 1 4,4,4,4,4,4,4,04","web:bindings 1 4,4,4,4,4,4,4,4 junk","web:bindings 1 ","web:bindings"})
    assert(!gesture_bindings_parse(c,a,r));
  }
 }
@@ -113,7 +113,7 @@ class RuntimeBindingsTests(unittest.TestCase):
             (root/'catalog.h').write_text(CATALOG)
             (root/'harness.cpp').write_text(HARNESS)
             executables=[]
-            for key,defaults in [('legacy-v1',list(range(8))),('letters-v1',[-1]*8)]:
+            for key,defaults in [('legacy-v1',[-1,-1,-1,-1,4,5,6,7]),('letters-v1',[-1]*8)]:
                 (root/'Model/GestureProfile.h').write_text('#pragma once\n#include <stdint.h>\nconstexpr int kGestureCount=8;\nstruct GestureProfileFallback {const char*key;int count;};\nconstexpr int kGestureFallbackCount=0;\nconstexpr GestureProfileFallback kGestureFallbacks[]={{"",0}};\nconstexpr const char*kGestureProfileKey="'+key+'";\nconstexpr int8_t kDefaultGestureActions[8]={'+','.join(map(str,defaults))+'};\n')
                 exe=root/(key+('.exe' if os.name=='nt' else ''))
                 compiled=subprocess.run(['g++','-std=c++17','-pthread','-include',str(root/'catalog.h'),'-I'+str(root),'-I'+str(FIRMWARE/'src'),str(FIRMWARE/'src/Service/GestureBindings.cpp'),str(root/'harness.cpp'),'-o',str(exe)],capture_output=True,text=True)
@@ -189,17 +189,17 @@ int main(int argc,char**argv){
  if(mode=="migrate"){for(int i=0;i<8;++i){assert(s.actions[i]==5);assert(s.effects[i]==-1);}}
  if(mode=="save"){
   int8_t a[8],fx[8];uint32_t revision;
-  assert(gesture_bindings_parse("web:bindings 1 -1,0,1,6,7,4,5,6 5,18,25,0,-1,12,21,8",a,fx,revision));
+  assert(gesture_bindings_parse("web:bindings 1 -1,12,43,6,7,4,5,6 5,18,25,0,-1,12,21,8",a,fx,revision));
   assert(gesture_bindings_save(a,fx,revision)==BindingSave::Saved);
   s=gesture_bindings_state();assert(s.actions[0]==-1&&s.effects[0]==5&&s.effects[2]==25);
   assert(gesture_bindings_save(a,fx,revision)==BindingSave::Conflict);
   assert(gesture_bindings_save(a,fx,s.revision)==BindingSave::Saved);assert(gesture_bindings_state().revision==s.revision);
-  for(const char*bad:{"web:bindings 2 -1,0,1,6,7,4,5,6 26,18,25,0,-1,12,21,8","web:bindings 2 -1,0,1,6,7,4,5,6 -2,18,25,0,-1,12,21,8","web:bindings 2 -1,0,1,6,7,4,5,6 5,18,25,0,-1,12,21","web:bindings 2 -1,0,1,6,7,4,5,6 05,18,25,0,-1,12,21,8","web:bindings 2 -1,0,1,6,7,4,5,6 5,18,25,0,-1,12,21,8 junk"})assert(!gesture_bindings_parse(bad,a,fx,revision));
+  for(const char*bad:{"web:bindings 2 -1,12,43,6,7,4,5,6 26,18,25,0,-1,12,21,8","web:bindings 2 -1,12,43,6,7,4,5,6 -2,18,25,0,-1,12,21,8","web:bindings 2 -1,12,43,6,7,4,5,6 5,18,25,0,-1,12,21","web:bindings 2 -1,12,43,6,7,4,5,6 05,18,25,0,-1,12,21,8","web:bindings 2 -1,12,43,6,7,4,5,6 5,18,25,0,-1,12,21,8 junk"})assert(!gesture_bindings_parse(bad,a,fx,revision));
  }
  if(mode=="load"||mode=="fail"||mode=="legacy"){
   assert(s.actions[0]==-1&&s.effects[0]==5&&s.effects[2]==25);
   if(mode=="fail"){failWrite=true;auto a=s.actions;auto fx=s.effects;fx[0]=6;assert(gesture_bindings_save(a,fx,s.revision)==BindingSave::StorageError);auto after=gesture_bindings_state();assert(after.effects[0]==5&&after.actions[0]==-1&&after.revision==s.revision);}
-  if(mode=="legacy"){int8_t a[8],fx[8];uint32_t rev;assert(gesture_bindings_parse("web:bindings 1 7,0,1,6,7,4,5,6",a,fx,rev));assert(fx[0]==5);assert(gesture_bindings_save(a,fx,rev)==BindingSave::Saved);assert(gesture_bindings_state().effects[0]==5);}
+  if(mode=="legacy"){int8_t a[8],fx[8];uint32_t rev;assert(gesture_bindings_parse("web:bindings 1 7,12,43,6,7,4,5,6",a,fx,rev));assert(fx[0]==5);assert(gesture_bindings_save(a,fx,rev)==BindingSave::Saved);assert(gesture_bindings_state().effects[0]==5);}
  }
 }
 ''')

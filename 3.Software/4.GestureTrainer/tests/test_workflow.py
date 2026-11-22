@@ -116,7 +116,9 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn('if (accepted) EventBus::publish(EVENT_GESTURE_TRIGGER',inference)
         self.assertIn('roundf(',inference)
         self.assertIn('gesture 5',(template/'src/Service/WebPage.h').read_text())
-        self.assertIn('"legacy-v1"',(template/'src/Model/GestureProfile.h').read_text())
+        builtin=(template/'src/Model/GestureProfile.h').read_text().replace(' ','')
+        self.assertIn('kGestureProfileKey="letters-v1"',builtin)
+        self.assertIn('"a","e","n","o","p","s","8","∞"',builtin)
 
     def test_training_needs_no_firmware_project_or_compiler(self):
         seed_data(self.w)

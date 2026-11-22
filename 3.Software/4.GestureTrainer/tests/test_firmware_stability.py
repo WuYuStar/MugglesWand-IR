@@ -142,45 +142,64 @@ constexpr unsigned portMAX_DELAY=0xffffffff;
 #define pdMS_TO_TICKS(x) (x)
 #define portYIELD_FROM_ISR()
 #define RAD_TO_DEG 57.295779513f
+#define INPUT_PULLUP 2
+#define FALLING 2
+#define HIGH 1
+#define LOW 0
+extern bool motionPinLow;
+inline void pinMode(int,int){}
+inline int digitalRead(int){return motionPinLow?LOW:HIGH;}
+inline void attachInterrupt(int,void(*irq)(),int){if(motionPinLow)irq();}
+inline void detachInterrupt(int){}
 extern uint32_t clockMs;inline uint32_t millis(){return clockMs;}
+void vTaskDelay(unsigned ticks);
 inline void *xQueueCreate(int,int){return (void*)1;}inline void *xSemaphoreCreateBinary(){return (void*)2;}
 inline void *xQueueCreateSet(int){return (void*)3;}inline void xQueueAddToSet(void*,void*){}
 inline void xTaskCreatePinnedToCore(void(*)(void*),const char*,int,void*,int,void **handle,int){if(handle)*handle=(void*)4;}
 inline void xSemaphoreGiveFromISR(void*,int*){}inline int xSemaphoreTake(void*,unsigned){return 1;}
-void *xQueueSelectFromSet(void*,unsigned);inline int xQueueReceive(void*,void*,unsigned){return 0;}
+void *xQueueSelectFromSet(void*,unsigned);int xQueueReceive(void*,void*,unsigned);
 struct Bus{void begin(int,int){}};inline Bus Wire;
 ''',
         'HAL.h':r'''
 #pragma once
 #include <Arduino.h>
 class AnimStatus;
-namespace HAL{void ICM42670P_start(int8_t);void ICM42670P_stop();bool ICM42670P_init();int8_t ICM42670P_getDataMux();bool ICM42670P_ready();bool ICM42670P_idle();uint32_t ICM42670P_samples();uint32_t ICM42670P_sampleAge();uint32_t ICM42670P_recoveries();void enable_AnimStatus();void ws2812_set_overlay(AnimStatus*);}
+namespace HAL{void ICM42670P_start(int8_t);void ICM42670P_stop();bool ICM42670P_init();int8_t ICM42670P_getDataMux();bool ICM42670P_ready();bool ICM42670P_idle();const char* ICM42670P_modelName();bool ICM42670P_supportsMotionWake();bool ICM42670P_prepareSleep();uint32_t ICM42670P_samples();uint32_t ICM42670P_sampleAge();uint32_t ICM42670P_recoveries();void enable_AnimStatus();void ws2812_set_overlay(AnimStatus*);}
 ''',
         'HAL_ICM42670P.h':r'''
 #pragma once
 #include <Arduino.h>
 struct inv_imu_sensor_event_t{};
-extern bool emitSample;extern int readCalls,startCalls,startError;
+extern bool emitSample;extern int readCalls,startCalls,startError,wakeCalls,wakeError;
 class ICM42670{
 public:
+ enum class Model{Unknown,Sensor42670P,Sensor42607P};
+ Model sensor=Model::Sensor42670P;
+ Model model() const{return sensor;}
  struct IMU_PhysicalData_t{float Ax=0,Ay=0,Az=1,Gx=0,Gy=0,Gz=0;};
  inline static IMU_PhysicalData_t *physical=nullptr;
  ICM42670(Bus&,int,int){}int begin(){return 0;}int enterSleepMode(){return 0;}
  int enableDataFromFifoInterrupt(int,void(*)()){++startCalls;return startError;}
- int startWakeOnMotion(int){return 0;}
+ int startWakeOnMotion(int){++wakeCalls;return wakeError;}
+ int motionWakeStatus(uint8_t &axes){axes=motionPinLow?1:0;return 0;}
  int getDataFromFifo(void(*cb)(inv_imu_sensor_event_t*)){++readCalls;if(emitSample){inv_imu_sensor_event_t e;cb(&e);}return 0;}
  void convertToPhysical(inv_imu_sensor_event_t*,IMU_PhysicalData_t &data){data=*physical;}
  bool isAccelDataValid(inv_imu_sensor_event_t*){return true;}bool isGyroDataValid(inv_imu_sensor_event_t*){return true;}
 };
 ''',
-        'Config.h':'#pragma once\n#define PIN_IMU_SDA 1\n#define PIN_IMU_SCL 2\n#define PIN_IMU_INT 3\n',
+        'Config.h':'#pragma once\n#define PIN_IMU_SDA 1\n#define PIN_IMU_SCL 2\n#define PIN_IMU_INT 3\n#define WAND_42607_SLEEP_TRIAL 0\n',
         'Service/AP.h':'#pragma once\n',
         'Service/EventBus.h':r'''
 #pragma once
 #include <Arduino.h>
-enum EventID{EVENT_IMU_SET_MUX,EVENT_IMU_RESET_MUX,EVENT_IMU_SET_WOM,EVENT_IMU_STATUS_CHANGED,EVENT_IMU_DATA_UPDATED};
+enum EventID{EVENT_IMU_SET_MUX,EVENT_IMU_RESET_MUX,EVENT_IMU_PREPARE_SLEEP,EVENT_IMU_STATUS_CHANGED,EVENT_IMU_DATA_UPDATED,EVENT_IMU_TEST_MOTION_WAKE};
 union Param{int i32;float f32;};struct SystemEvent{EventID id;Param param1,param2;};
-struct EventBus{template<class...T>static bool publish(T...){return true;}static void subscribe(EventID,void*){}};
+extern bool queuedSleep,queueAcceptsSleep;
+struct EventBus{
+ static bool publish(EventID id){if(id!=EVENT_IMU_PREPARE_SLEEP)return true;return queuedSleep=queueAcceptsSleep;}
+ template<class...T>static bool publish(T...){return true;}
+ static void subscribe(EventID,void*){}
+};
 struct Log{template<class T>void println(T){}void print(const char*){}template<class...T>void printf(const char*,T...){}};inline Log DualSerial;
 ''',
         'Model/gesture_buffer.h':'#pragma once\nextern int resets;inline uint32_t resetGestureBuffer(){return ++resets;}inline void addSample(float,float,bool){}\n',
@@ -190,11 +209,23 @@ struct Log{template<class T>void println(T){}void print(const char*){}template<c
 #include "HAL_IMU.cpp"
 #include <cassert>
 #include <cmath>
-uint32_t clockMs=0;bool emitSample=true;int readCalls=0,startCalls=0,startError=0,resets=0,selects=0;
+#include <string_view>
+uint32_t clockMs=0;bool emitSample=true,queuedSleep=false,queueAcceptsSleep=true,processOnDelay=true;
+bool motionPinLow=false;
+int readCalls=0,startCalls=0,startError=0,wakeCalls=0,wakeError=0,resets=0,selects=0;
 struct Done{};
-void *xQueueSelectFromSet(void*,unsigned wait){assert(wait==50);if(selects++)throw Done{};return nullptr;}
+void *xQueueSelectFromSet(void*,unsigned wait){
+ assert(wait==(IMU.model()==ICM42670::Model::Sensor42607P?10:50));
+ if(selects++)throw Done{};
+ return queuedSleep?icm42670p_queue:nullptr;
+}
+int xQueueReceive(void*,void *output,unsigned){
+ *static_cast<SystemEvent*>(output)={EVENT_IMU_PREPARE_SLEEP,{},{}};
+ queuedSleep=false;return 1;
+}
 namespace HAL{void ws2812_set_overlay(AnimStatus *s){delete s;}}
 void cycle(){selects=0;try{icm42670p_task(nullptr);}catch(Done&){} }
+void vTaskDelay(unsigned ticks){clockMs+=ticks;if(processOnDelay&&queuedSleep)cycle();}
 int main(){
  ICM42670::IMU_PhysicalData_t data;ICM42670::physical=&data;
  assert(HAL::ICM42670P_init());HAL::ICM42670P_start(2);assert(startCalls==1);
@@ -206,14 +237,47 @@ int main(){
  emitSample=true;clockMs=1600;cycle();assert(HAL::ICM42670P_ready());
  HAL::ICM42670P_stop();assert(!HAL::ICM42670P_ready()&&HAL::ICM42670P_getDataMux()==-1);
  startError=-1;HAL::ICM42670P_start(2);assert(HAL::ICM42670P_getDataMux()==-1);
- startError=0;HAL::ICM42670P_start(2);clockMs=1700;cycle();assert(HAL::ICM42670P_ready());
+ startError=0;clockMs=2600;cycle();assert(!HAL::ICM42670P_ready());clockMs=2610;cycle();assert(HAL::ICM42670P_ready());
+ assert(std::string_view(HAL::ICM42670P_modelName())=="ICM-42670-P");
+ IMU.sensor=ICM42670::Model::Sensor42607P;
+ assert(std::string_view(HAL::ICM42670P_modelName())=="ICM-42607-P");
+ int reads=readCalls;cycle();assert(readCalls==reads+1);
+ motionPinLow=true;
+ assert(!HAL::ICM42670P_prepareSleep()&&wakeCalls==1&&HAL::ICM42670P_getDataMux()==2);
+ cycle();assert(HAL::ICM42670P_ready());
+ testMotionWake();assert(wakeCalls==2&&HAL::ICM42670P_getDataMux()==2);
+ cycle();assert(HAL::ICM42670P_ready());
+ motionPinLow=false;
+ IMU.sensor=ICM42670::Model::Sensor42670P;
+ HAL::ICM42670P_start(3);
+ queueAcceptsSleep=false;assert(!HAL::ICM42670P_prepareSleep()&&HAL::ICM42670P_getDataMux()==3);
+ queueAcceptsSleep=true;wakeError=-1;
+ assert(!HAL::ICM42670P_prepareSleep()&&wakeCalls==3&&HAL::ICM42670P_getDataMux()==3);
+ cycle();assert(HAL::ICM42670P_ready());
+ processOnDelay=false;assert(!HAL::ICM42670P_prepareSleep()&&queuedSleep);cycle();
+ assert(wakeCalls==3&&HAL::ICM42670P_getDataMux()==3);
+ processOnDelay=true;wakeError=0;
+ assert(HAL::ICM42670P_prepareSleep()&&wakeCalls==4&&HAL::ICM42670P_getDataMux()==-1);
 }
 ''')
 
     def test_renderer_stop_owns_cleanup_while_producers_are_active(self):
         self.native({'HAL_WS2812.cpp':(find_template()/'src/HAL/HAL_WS2812.cpp').read_text(encoding='utf-8'),
-        'HAL.h':'#pragma once\nclass AnimationBase;namespace HAL{void ws2812_init();void ws2812_stop();void ws2812_set_background(AnimationBase*);void ws2812_start_fx(AnimationBase*);void ws2812_set_overlay(AnimationBase*);}\n',
-        'Config.h':'#pragma once\n#define WS2812_LED_COUNT 39\n#define PIN_WS2812 38\n#define PIN_WS2812_EN 39\n',
+        'HAL.h':'#pragma once\n#include <stdint.h>\nclass AnimationBase;namespace HAL{void ws2812_init();void ws2812_stop();void ws2812_set_background(AnimationBase*);void ws2812_start_fx(AnimationBase*);void ws2812_set_overlay(AnimationBase*);uint8_t ws2812_count();bool ws2812_set_count(uint8_t);}\n',
+        'Config.h':'#pragma once\n#define WS2812_LED_MIN_COUNT 35\n#define WS2812_LED_DEFAULT_COUNT 39\n#define WS2812_LED_MAX_COUNT 45\n#define PIN_WS2812 38\n#define PIN_WS2812_EN 39\n',
+        'Preferences.h':r'''
+#pragma once
+#include <stdint.h>
+#include <stddef.h>
+struct Preferences {
+ static inline uint8_t saved=41;
+ static inline bool failWrite=false;
+ bool begin(const char*,bool){return true;}
+ uint8_t getUChar(const char*,uint8_t){return saved;}
+ size_t putUChar(const char*,uint8_t value){if(failWrite)return 0;saved=value;return sizeof(value);}
+ void end(){}
+};
+''',
         'Arduino.h':r'''
 #pragma once
 #include <stdint.h>
@@ -256,7 +320,14 @@ void xTaskCreatePinnedToCore(void(*f)(void*),const char*,int,void *arg,int,TaskH
 std::atomic<int> made{0},destroyed{0};
 struct Animation:AnimationBase{Animation(){++made;}~Animation(){++destroyed;}void update(CRGB*,uint16_t)override{}};
 int main(){
+ assert(HAL::ws2812_count()==39);
  HAL::ws2812_init();auto *renderer=ws2812_task_handle;
+ assert(HAL::ws2812_count()==41);
+ assert(HAL::ws2812_set_count(45)&&HAL::ws2812_count()==45&&Preferences::saved==45);
+ assert(HAL::ws2812_set_count(35)&&HAL::ws2812_count()==35&&Preferences::saved==35);
+ assert(!HAL::ws2812_set_count(34)&&!HAL::ws2812_set_count(46));
+ Preferences::failWrite=true;
+ assert(!HAL::ws2812_set_count(39)&&HAL::ws2812_count()==35&&Preferences::saved==35);
  std::thread producer([]{for(int i=0;i<10000;++i)HAL::ws2812_start_fx(new Animation);});
  std::this_thread::sleep_for(std::chrono::milliseconds(2));HAL::ws2812_stop();producer.join();renderer->join();delete renderer;
  assert(made==destroyed);assert(!ws2812_task_handle&&layer_queue->items.empty());
@@ -360,13 +431,14 @@ inline void xSemaphoreGiveRecursive(SemaphoreHandle_t m){m->unlock();}
 ''',
         'AP.h':'#pragma once\n#include <Arduino.h>\nvoid ap_toggle();bool ap_is_running();void ap_print(const char*,size_t);\n',
         'HomeAssistant.h':'#pragma once\ninline bool ha_uses_wifi(){return false;}inline void ha_start(){}\n',
+        'IrLink.h':'#pragma once\n#include <stdint.h>\ninline void ir_link_receive(const uint8_t*,const uint8_t*,int){}\n',
         'AP_Web.h':'#pragma once\ninline void ap_web_start(){}inline void ap_web_stop(){}inline void ap_web_print(const char*,size_t){}\n',
         'Config.h':'#pragma once\n#define AP_SSID "Wand"\n#define AP_PASS "12345678"\n',
         'Service/Console.h':'#pragma once\nvoid console_parse(char*);\n',
         'Service/DualPrint.h':'#pragma once\nstruct Log{template<class T>void print(T){}template<class U>void println(U){}template<class...T>void printf(const char*,T...){}};inline Log DualSerial;\n',
         'WiFi.h':'#pragma once\n#include <Arduino.h>\nenum wifi_mode_t{WIFI_MODE_NULL,WIFI_MODE_STA,WIFI_MODE_APSTA};constexpr int WIFI_AP_STA=2,WIFI_STA=1,WIFI_OFF=0;struct Radio{void mode(int){}void softAP(const char*,const char*){}void softAPdisconnect(bool){}int softAPIP(){return 1;}int channel(){return 1;}};inline Radio WiFi;\n',
         'esp_wifi.h':'#pragma once\n#define ESP_OK 0\n',
-        'esp_now.h':'#pragma once\nusing esp_now_send_status_t=int;struct esp_now_peer_info_t{uint8_t peer_addr[6];int channel;bool encrypt;};inline int esp_now_init(){return 0;}inline void esp_now_register_send_cb(void(*)(const uint8_t*,int)){}inline void esp_now_add_peer(esp_now_peer_info_t*){}inline void esp_now_deinit(){}inline int esp_now_send(const uint8_t*,const uint8_t*,size_t){return 0;}\n',
+        'esp_now.h':'#pragma once\nusing esp_now_send_status_t=int;struct esp_now_peer_info_t{uint8_t peer_addr[6];int channel;bool encrypt;};inline int esp_now_init(){return 0;}inline void esp_now_register_send_cb(void(*)(const uint8_t*,int)){}inline void esp_now_register_recv_cb(void(*)(const uint8_t*,const uint8_t*,int)){}inline int esp_now_add_peer(esp_now_peer_info_t*){return 0;}inline bool esp_now_is_peer_exist(const uint8_t*){return false;}inline void esp_now_deinit(){}inline int esp_now_send(const uint8_t*,const uint8_t*,size_t){return 0;}\n',
         'AsyncTCP.h':r'''
 #pragma once
 #include <Arduino.h>

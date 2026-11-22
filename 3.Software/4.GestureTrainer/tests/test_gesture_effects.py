@@ -1,4 +1,4 @@
-"""Actual preset renderer: finite lifetime, 39-pixel bounds and preview clearing."""
+"""Actual preset renderer across the supported strip lengths."""
 import os
 from pathlib import Path
 import shutil
@@ -29,7 +29,7 @@ inline const CRGB CRGB::White{0xffffff},CRGB::Black{0};
 
 @unittest.skipUnless(shutil.which('g++'),'requires native C++ compiler')
 class GestureEffectTests(unittest.TestCase):
-    def test_all_presets_render_finish_and_respect_39_led_bounds(self):
+    def test_all_presets_render_finish_and_respect_configured_led_bounds(self):
         with tempfile.TemporaryDirectory() as folder:
             root=Path(folder);(root/'HAL').mkdir()
             (root/'Arduino.h').write_text('#pragma once\n#include <stdint.h>\nextern uint32_t clockMs;inline uint32_t millis(){return clockMs;}\n')
@@ -45,13 +45,13 @@ uint32_t clockMs=0;AnimationBase*current=nullptr;
 namespace HAL{void ws2812_start_fx(AnimationBase*a){delete current;current=a;if(a)a->init();}}
 int main(){
  assert(kGestureEffectChoiceCount==27);std::set<int>colors;
- for(int id=1;id<=25;++id){
+ for(int count:{35,39,45})for(int id=1;id<=25;++id){
   clockMs=0;gesture_effect_play(id);assert(current);bool visible=false;
   for(int t=0;t<=1900;t+=10){
-   CRGB buffer[41];buffer[0]=CRGB(1,2,3);buffer[40]=CRGB(4,5,6);clockMs=t;current->update(buffer+1,39);
-   assert(buffer[0]==CRGB(1,2,3)&&buffer[40]==CRGB(4,5,6));
-   for(int i=1;i<=39;++i)if(!(buffer[i]==CRGB::Black))visible=true;
-   if(id<=8&&t==80){auto c=buffer[18];colors.insert((c.r<<16)|(c.g<<8)|c.b);}
+   CRGB buffer[47];buffer[0]=CRGB(1,2,3);buffer[count+1]=CRGB(4,5,6);clockMs=t;current->update(buffer+1,count);
+   assert(buffer[0]==CRGB(1,2,3)&&buffer[count+1]==CRGB(4,5,6));
+   for(int i=1;i<=count;++i)if(!(buffer[i]==CRGB::Black))visible=true;
+   if(count==39&&id<=8&&t==80){auto c=buffer[18];colors.insert((c.r<<16)|(c.g<<8)|c.b);}
   }
   assert(visible&&current->finished());
  }
